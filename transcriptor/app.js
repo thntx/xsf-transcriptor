@@ -164,9 +164,18 @@ function processWords(words, srcWords, opts) {
     applyContact(interlexContact(a, b, opts), a, b);
   }
 
-  const live = toks.filter(t => !t.dead);
+  const live0 = toks.filter(t => !t.dead);
   let ipaShow = ''; let lastW = -1;
-  live.forEach(t => { if (lastW !== -1 && t.w !== lastW && opts.espais) ipaShow += ' '; lastW = t.w; ipaShow += (t.stress ? 'ˈ' : '') + t.ph + (t.glide ? '̯' : ''); });
+  live0.forEach(t => { if (lastW !== -1 && t.w !== lastW && opts.espais) ipaShow += ' '; lastW = t.w; ipaShow += (t.stress ? 'ˈ' : '') + t.ph + (t.glide ? '̯' : ''); });
+  // AFRICADES ts/dz: el motor les dóna com UN fonema, però en XSF són DUES grafies (t+s, d+z).
+  // Es parteixen aquí perquè la vocal lligui amb la 1a coda (síl·laba inversa) i la tònica hi
+  // vagi darrere (taüts -> tx̀ut+s, no tx̀uts+); l'AFI (ipaShow) conserva l'africada sencera.
+  const AFFRIC = { ts: ['t', 's'], dz: ['d', 'z'] };
+  const live = [];
+  for (const t of live0) {
+    if (AFFRIC[t.ph] && !t.glide) AFFRIC[t.ph].forEach(sub => live.push({ ...t, ph: sub, key: (sub in MAP) ? MAP[sub] : sub, vowel: false, neutral: false, stress: false }));
+    else live.push(t);
+  }
 
   const adj = (i, j) => i >= 0 && j < live.length && (live[i].w === live[j].w || !opts.espais);
   // PENJADES: cada vocal s'aparella amb el seu ONSET (consonant abans -> glif CV) o, si no en té,
